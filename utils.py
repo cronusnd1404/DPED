@@ -14,7 +14,7 @@ def log10(x):
 
 def _tensor_size(tensor):
     from operator import mul
-    return reduce(mul, (d.value for d in tensor.get_shape()[1:]), 1)
+    return reduce(mul, (d for d in tensor.get_shape().as_list()[1:]), 1)
 
 
 def gauss_kernel(kernlen=21, nsig=3, channels=1):

@@ -1,5 +1,5 @@
 from __future__ import print_function
-from scipy import misc
+import imageio
 import os
 import numpy as np
 import sys
@@ -17,11 +17,11 @@ def load_test_data(phone, dped_dir, IMAGE_SIZE):
 
     for i in range(0, NUM_TEST_IMAGES):
         
-        I = np.asarray(misc.imread(test_directory_phone + str(i) + '.jpg'))
+        I = np.asarray(imageio.imread(test_directory_phone + str(i) + '.jpg'))
         I = np.float16(np.reshape(I, [1, IMAGE_SIZE]))/255
         test_data[i, :] = I
         
-        I = np.asarray(misc.imread(test_directory_dslr + str(i) + '.jpg'))
+        I = np.asarray(imageio.imread(test_directory_dslr + str(i) + '.jpg'))
         I = np.float16(np.reshape(I, [1, IMAGE_SIZE]))/255
         test_answ[i, :] = I
 
@@ -53,11 +53,11 @@ def load_batch(phone, dped_dir, TRAIN_SIZE, IMAGE_SIZE):
     i = 0
     for img in TRAIN_IMAGES:
 
-        I = np.asarray(misc.imread(train_directory_phone + str(img) + '.jpg'))
+        I = np.asarray(imageio.imread(train_directory_phone + str(img) + '.jpg'))
         I = np.float16(np.reshape(I, [1, IMAGE_SIZE])) / 255
         train_data[i, :] = I
 
-        I = np.asarray(misc.imread(train_directory_dslr + str(img) + '.jpg'))
+        I = np.asarray(imageio.imread(train_directory_dslr + str(img) + '.jpg'))
         I = np.float16(np.reshape(I, [1, IMAGE_SIZE])) / 255
         train_answ[i, :] = I
 

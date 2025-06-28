@@ -48,10 +48,9 @@ def resnet(input_image):
         W11 = weight_variable([3, 3, 64, 64], name="W11"); b11 = bias_variable([64], name="b11");
         c11 = tf.nn.relu(conv2d(c10, W11) + b11)
 
-        # Final
-
+        # Final layer with improved dynamic range
         W12 = weight_variable([9, 9, 64, 3], name="W12"); b12 = bias_variable([3], name="b12");
-        enhanced = tf.nn.tanh(conv2d(c11, W12) + b12) * 0.58 + 0.5
+        enhanced = tf.nn.tanh(conv2d(c11, W12) + b12) * 0.6 + 0.5  # Slightly increase range
 
     return enhanced
 
@@ -118,8 +117,8 @@ def _conv_layer(net, num_filters, filter_size, strides, batch_nn=True):
 
 
 def _instance_norm(net):
-
-    batch, rows, cols, channels = [i.value for i in net.get_shape()]
+    shape = net.get_shape().as_list()
+    batch, rows, cols, channels = shape
     var_shape = [channels]
 
     mu, sigma_sq = tf.compat.v1.nn.moments(net, [1,2], keepdims=True)
@@ -133,8 +132,8 @@ def _instance_norm(net):
 
 
 def _conv_init_vars(net, out_channels, filter_size, transpose=False):
-
-    _, rows, cols, in_channels = [i.value for i in net.get_shape()]
+    shape = net.get_shape().as_list()
+    _, rows, cols, in_channels = shape
 
     if not transpose:
         weights_shape = [filter_size, filter_size, in_channels, out_channels]
