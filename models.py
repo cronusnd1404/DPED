@@ -48,9 +48,9 @@ def resnet(input_image):
         W11 = weight_variable([3, 3, 64, 64], name="W11"); b11 = bias_variable([64], name="b11");
         c11 = tf.nn.relu(conv2d(c10, W11) + b11)
 
-        # Final layer with improved dynamic range
+        # Final
         W12 = weight_variable([9, 9, 64, 3], name="W12"); b12 = bias_variable([3], name="b12");
-        enhanced = tf.nn.tanh(conv2d(c11, W12) + b12) * 0.6 + 0.5  # Slightly increase range
+        enhanced = tf.nn.tanh(conv2d(c11, W12) + b12) * 0.58 + 0.5
 
     return enhanced
 

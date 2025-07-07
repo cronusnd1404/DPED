@@ -1,0 +1,60 @@
+step 0, sony | discriminator accuracy | train: 0, test: 0.7
+generator losses | train: 0.6915, test: 699.5 | content: 14.95, color: 1103, texture: -1.735, tv: 0.0001162 | psnr: 11.52, ms-ssim: 0.3222
+
+step 1000, sony | discriminator accuracy | train: 0.489, test: 0.5
+generator losses | train: 284, test: 244.3 | content: 13.44, color: 218.9, texture: -0.9227, tv: 0.0007106 | psnr: 17.6, ms-ssim: 0.846
+
+step 2000, sony | discriminator accuracy | train: 0.498, test: 0.5
+generator losses | train: 214.5, test: 230.3 | content: 12.59, color: 207, texture: -0.8827, tv: 0.0008696 | psnr: 18.6, ms-ssim: 0.8621
+
+step 3000, sony | discriminator accuracy | train: 0.5, test: 0.6
+generator losses | train: 188.7, test: 215 | content: 11.07, color: 204.6, texture: -0.6678, tv: 0.001312 | psnr: 18.97, ms-ssim: 0.887
+
+step 4000, sony | discriminator accuracy | train: 0.5, test: 0.6
+generator losses | train: 175.5, test: 220.9 | content: 11.7, color: 205.5, texture: -0.6763, tv: 0.000956 | psnr: 19.14, ms-ssim: 0.8699
+
+step 5000, sony | discriminator accuracy | train: 0.508, test: 0.6
+generator losses | train: 174.4, test: 198.5 | content: 10.72, color: 179.3, texture: -0.7218, tv: 0.001224 | psnr: 20.12, ms-ssim: 0.8908
+
+step 6000, sony | discriminator accuracy | train: 0.516, test: 0.6
+generator losses | train: 151.3, test: 187.2 | content: 10.07, color: 169.4, texture: -0.7267, tv: 0.001258 | psnr: 20.47, ms-ssim: 0.8973
+
+step 7000, sony | discriminator accuracy | train: 0.49, test: 0.7
+generator losses | train: 149.2, test: 193.3 | content: 10.36, color: 176.1, texture: -0.605, tv: 0.001127 | psnr: 20.04, ms-ssim: 0.895
+
+step 8000, sony | discriminator accuracy | train: 0.508, test: 0.3
+generator losses | train: 157.7, test: 200.6 | content: 9.653, color: 204.8, texture: -0.9199, tv: 0.001294 | psnr: 19.13, ms-ssim: 0.8944
+
+step 9000, sony | discriminator accuracy | train: 0.52, test: 0.4
+generator losses | train: 158.6, test: 192.6 | content: 10.46, color: 170.6, texture: -0.6939, tv: 0.001707 | psnr: 20.33, ms-ssim: 0.9004
+
+step 10000, sony | discriminator accuracy | train: 0.494, test: 0.3
+generator losses | train: 147.5, test: 185.6 | content: 9.644, color: 173.3, texture: -0.6935, tv: 0.001598 | psnr: 20.62, ms-ssim: 0.898
+
+step 11000, sony | discriminator accuracy | train: 0.516, test: 0.5
+generator losses | train: 154.2, test: 188.8 | content: 9.538, color: 182.7, texture: -0.6967, tv: 0.001385 | psnr: 19.38, ms-ssim: 0.8979
+
+step 12000, sony | discriminator accuracy | train: 0.526, test: 0.6
+generator losses | train: 153.4, test: 204.6 | content: 9.12, color: 223, texture: -0.6841, tv: 0.0013 | psnr: 18.83, ms-ssim: 0.888
+
+step 13000, sony | discriminator accuracy | train: 0.519, test: 0.4
+generator losses | train: 139.6, test: 183.4 | content: 9.505, color: 172.4, texture: -0.6941, tv: 0.001427 | psnr: 20.79, ms-ssim: 0.9006
+
+step 14000, sony | discriminator accuracy | train: 0.499, test: 0.6
+generator losses | train: 149.3, test: 177.7 | content: 9.101, color: 168.9, texture: -0.6561, tv: 0.001454 | psnr: 20.29, ms-ssim: 0.9023
+
+step 15000, sony | discriminator accuracy | train: 0.5, test: 0.5
+generator losses | train: 148.9, test: 176.6 | content: 9.437, color: 160.2, texture: -0.6931, tv: 0.001406 | psnr: 20.61, ms-ssim: 0.9019
+
+step 16000, sony | discriminator accuracy | train: 0.525, test: 0.5
+generator losses | train: 141.3, test: 187.9 | content: 9.392, color: 183.3, texture: -0.696, tv: 0.001497 | psnr: 19.67, ms-ssim: 0.8968
+
+step 17000, sony | discriminator accuracy | train: 0.502, test: 0.5
+generator losses | train: 144.5, test: 183.4 | content: 9.621, color: 169.9, texture: -0.6932, tv: 0.001466 | psnr: 20.62, ms-ssim: 0.8996
+
+step 18000, sony | discriminator accuracy | train: 0.497, test: 0.5
+generator losses | train: 141.8, test: 183.6 | content: 9.419, color: 174.7, texture: -0.697, tv: 0.001364 | psnr: 20.41, ms-ssim: 0.9031
+
+step 19000, sony | discriminator accuracy | train: 0.49, test: 0.6
+generator losses | train: 143.9, test: 232.1 | content: 10.15, color: 257.1, texture: -0.6913, tv: 0.001332 | psnr: 17.35, ms-ssim: 0.8941
+

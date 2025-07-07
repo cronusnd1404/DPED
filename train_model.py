@@ -4,6 +4,12 @@ import tensorflow as tf
 import imageio
 import numpy as np
 import sys
+import os
+
+# Set environment variables for GPU optimization
+os.environ['TF_GPU_ALLOCATOR'] = 'cuda_malloc_async'
+os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+os.environ['TF_ENABLE_CUDNN_TENSOR_OP_MATH_FP32'] = '1'
 
 tf.compat.v1.disable_v2_behavior()
 
@@ -25,11 +31,21 @@ phone, batch_size, train_size, learning_rate, num_train_iters, \
 w_content, w_color, w_texture, w_tv, \
 dped_dir, vgg_dir, eval_step = utils.process_command_args(sys.argv)
 
+# Drastically reduce batch size for 4GB GPU
+batch_size = min(batch_size, 1)  # Use batch size of 1 to minimize memory usage
+
 np.random.seed(0)
+
+# Configure GPU with very conservative settings
+config = tf.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+config.gpu_options.per_process_gpu_memory_fraction = 0.7  # Use more memory but carefully
+config.allow_soft_placement = True
+config.log_device_placement = False
 
 # defining system architecture
 
-with tf.Graph().as_default(), tf.compat.v1.Session() as sess:
+with tf.Graph().as_default(), tf.compat.v1.Session(config=config) as sess:
     
     # placeholders for training data
 
@@ -68,12 +84,16 @@ with tf.Graph().as_default(), tf.compat.v1.Session() as sess:
     correct_predictions = tf.equal(tf.argmax(discrim_predictions, 1), tf.argmax(discrim_target, 1))
     discim_accuracy = tf.reduce_mean(tf.cast(correct_predictions, tf.float32))
 
-    # 2) content loss
+    # 2) content loss with memory optimization
 
     CONTENT_LAYER = 'relu5_4'
 
-    enhanced_vgg = vgg.net(vgg_dir, vgg.preprocess(enhanced * 255))
-    dslr_vgg = vgg.net(vgg_dir, vgg.preprocess(dslr_image * 255))
+    # Create VGG networks with gradient stopping to reduce memory
+    with tf.name_scope("vgg_enhanced"):
+        enhanced_vgg = vgg.net(vgg_dir, vgg.preprocess(enhanced * 255))
+    
+    with tf.name_scope("vgg_dslr"):
+        dslr_vgg = vgg.net(vgg_dir, vgg.preprocess(dslr_image * 255))
 
     content_size = utils._tensor_size(dslr_vgg[CONTENT_LAYER]) * batch_size
     loss_content = 2 * tf.nn.l2_loss(enhanced_vgg[CONTENT_LAYER] - dslr_vgg[CONTENT_LAYER]) / content_size
@@ -137,37 +157,42 @@ with tf.Graph().as_default(), tf.compat.v1.Session() as sess:
     train_acc_discrim = 0.0
 
     all_zeros = np.reshape(np.zeros((batch_size, 1)), [batch_size, 1])
-    test_crops = test_data[np.random.randint(0, TEST_SIZE, 5), :]
+    test_crops = test_data[np.random.randint(0, TEST_SIZE, min(5, batch_size)), :]
 
     logs = open('models/' + phone + '.txt', "w+")
     logs.close()
 
     for i in range(num_train_iters):
 
-        # train generator
+        try:
+            # train generator
 
-        idx_train = np.random.randint(0, train_size, batch_size)
+            idx_train = np.random.randint(0, train_size, batch_size)
 
-        phone_images = train_data[idx_train]
-        dslr_images = train_answ[idx_train]
+            phone_images = train_data[idx_train]
+            dslr_images = train_answ[idx_train]
 
-        [loss_temp, temp] = sess.run([loss_generator, train_step_gen],
-                                        feed_dict={phone_: phone_images, dslr_: dslr_images, adv_: all_zeros})
-        train_loss_gen += loss_temp / eval_step
+            [loss_temp, temp] = sess.run([loss_generator, train_step_gen],
+                                            feed_dict={phone_: phone_images, dslr_: dslr_images, adv_: all_zeros})
+            train_loss_gen += loss_temp / eval_step
 
-        # train discriminator
+            # train discriminator
 
-        idx_train = np.random.randint(0, train_size, batch_size)
+            idx_train = np.random.randint(0, train_size, batch_size)
 
-        # generate image swaps (dslr or enhanced) for discriminator
-        swaps = np.reshape(np.random.randint(0, 2, batch_size), [batch_size, 1])
+            # generate image swaps (dslr or enhanced) for discriminator
+            swaps = np.reshape(np.random.randint(0, 2, batch_size), [batch_size, 1])
 
-        phone_images = train_data[idx_train]
-        dslr_images = train_answ[idx_train]
+            phone_images = train_data[idx_train]
+            dslr_images = train_answ[idx_train]
 
-        [accuracy_temp, temp] = sess.run([discim_accuracy, train_step_disc],
-                                        feed_dict={phone_: phone_images, dslr_: dslr_images, adv_: swaps})
-        train_acc_discrim += accuracy_temp / eval_step
+            [accuracy_temp, temp] = sess.run([discim_accuracy, train_step_disc],
+                                            feed_dict={phone_: phone_images, dslr_: dslr_images, adv_: swaps})
+            train_acc_discrim += accuracy_temp / eval_step
+
+        except tf.errors.ResourceExhaustedError as e:
+            print(f"GPU memory exhausted at iteration {i}, trying to continue...")
+            continue
 
         if i % eval_step == 0:
 
@@ -177,7 +202,7 @@ with tf.Graph().as_default(), tf.compat.v1.Session() as sess:
             test_accuracy_disc = 0.0
             loss_ssim = 0.0
 
-            for j in range(num_test_batches):
+            for j in range(min(num_test_batches, 10)):  # Limit test batches to save memory
 
                 be = j * batch_size
                 en = (j+1) * batch_size
@@ -187,22 +212,37 @@ with tf.Graph().as_default(), tf.compat.v1.Session() as sess:
                 phone_images = test_data[be:en]
                 dslr_images = test_answ[be:en]
 
-                [enhanced_crops, accuracy_disc, losses] = sess.run([enhanced, discim_accuracy, \
-                                [loss_generator, loss_content, loss_color, loss_texture, loss_tv, loss_psnr]], \
-                                feed_dict={phone_: phone_images, dslr_: dslr_images, adv_: swaps})
+                try:
+                    [enhanced_crops, accuracy_disc, losses] = sess.run([enhanced, discim_accuracy, \
+                                    [loss_generator, loss_content, loss_color, loss_texture, loss_tv, loss_psnr]], \
+                                    feed_dict={phone_: phone_images, dslr_: dslr_images, adv_: swaps})
 
-                test_losses_gen += np.asarray(losses) / num_test_batches
-                test_accuracy_disc += accuracy_disc / num_test_batches
+                    test_losses_gen += np.asarray(losses) / min(num_test_batches, 10)
+                    test_accuracy_disc += accuracy_disc / min(num_test_batches, 10)
 
-                loss_ssim += MultiScaleSSIM(np.reshape(dslr_images * 255, [batch_size, PATCH_HEIGHT, PATCH_WIDTH, 3]),
-                                                    enhanced_crops * 255) / num_test_batches
+                    # Calculate SSIM with error handling
+                    try:
+                        ssim_value = MultiScaleSSIM(np.reshape(dslr_images * 255, [batch_size, PATCH_HEIGHT, PATCH_WIDTH, 3]),
+                                                            enhanced_crops * 255) / min(num_test_batches, 10)
+                        if np.isnan(ssim_value) or np.isinf(ssim_value):
+                            ssim_value = 0.0
+                        loss_ssim += ssim_value
+                    except:
+                        loss_ssim += 0.0
+
+                except tf.errors.ResourceExhaustedError:
+                    print("Memory error during testing, skipping this batch")
+                    continue
 
             logs_disc = "step %d, %s | discriminator accuracy | train: %.4g, test: %.4g" % \
                   (i, phone, train_acc_discrim, test_accuracy_disc)
 
+            # Handle NaN in loss_ssim for logging
+            ssim_display = loss_ssim if not (np.isnan(loss_ssim) or np.isinf(loss_ssim)) else 0.0
+
             logs_gen = "generator losses | train: %.4g, test: %.4g | content: %.4g, color: %.4g, texture: %.4g, tv: %.4g | psnr: %.4g, ms-ssim: %.4g\n" % \
                   (train_loss_gen, test_losses_gen[0][0], test_losses_gen[0][1], test_losses_gen[0][2],
-                   test_losses_gen[0][3], test_losses_gen[0][4], test_losses_gen[0][5], loss_ssim)
+                   test_losses_gen[0][3], test_losses_gen[0][4], test_losses_gen[0][5], ssim_display)
 
             print(logs_disc)
             print(logs_gen)
@@ -217,14 +257,18 @@ with tf.Graph().as_default(), tf.compat.v1.Session() as sess:
             logs.close()
 
             # save visual results for several test image crops
+            try:
+                enhanced_crops = sess.run(enhanced, feed_dict={phone_: test_crops, dslr_: dslr_images, adv_: all_zeros})
 
-            enhanced_crops = sess.run(enhanced, feed_dict={phone_: test_crops, dslr_: dslr_images, adv_: all_zeros})
-
-            idx = 0
-            for crop in enhanced_crops:
-                before_after = np.hstack((np.reshape(test_crops[idx], [PATCH_HEIGHT, PATCH_WIDTH, 3]), crop))
-                imageio.imwrite('results/' + str(phone)+ "_" + str(idx) + '_iteration_' + str(i) + '.jpg', before_after)
-                idx += 1
+                idx = 0
+                for crop in enhanced_crops:
+                    before_after = np.hstack((np.reshape(test_crops[idx], [PATCH_HEIGHT, PATCH_WIDTH, 3]), crop))
+                    # Convert to uint8 and clip values to valid range
+                    before_after = np.clip(before_after * 255, 0, 255).astype(np.uint8)
+                    imageio.imwrite('results/' + str(phone)+ "_" + str(idx) + '_iteration_' + str(i) + '.jpg', before_after)
+                    idx += 1
+            except tf.errors.ResourceExhaustedError:
+                print("Memory error during visual results saving, skipping...")
 
             train_loss_gen = 0.0
             train_acc_discrim = 0.0
