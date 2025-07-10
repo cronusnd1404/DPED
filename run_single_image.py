@@ -6,6 +6,7 @@ from models import resnet
 import utils
 import os
 import argparse
+import re
 
 tf.compat.v1.disable_v2_behavior()
 
@@ -67,11 +68,22 @@ def process_image_in_patches(sess, enhanced, x_, image, patch_size=512, overlap=
         result[:, :, ch][~mask] = image[:, :, ch][~mask]
     return result
 
+def get_next_incremental_filename(folder, ext=".png"):
+    os.makedirs(folder, exist_ok=True)
+    files = os.listdir(folder)
+    numbers = []
+    for f in files:
+        m = re.match(r"(\d+)" + re.escape(ext) + r"$", f)
+        if m:
+            numbers.append(int(m.group(1)))
+    next_num = 1 if not numbers else max(numbers) + 1
+    return os.path.join(folder, f"{next_num}{ext}")
+
 def main():
     parser = argparse.ArgumentParser(description='Enhance a single image using a DPED model')
     parser.add_argument('--image', required=True, help='Path to input image')
     parser.add_argument('--model', required=True, choices=['iphone', 'sony', 'blackberry', 'iphone_orig', 'sony_orig', 'blackberry_orig'], help='Model type to use')
-    parser.add_argument('--iteration', default='latest', help='Model iteration to use (default: latest)')
+    parser.add_argument('--iteration', default='18000', help='Model iteration to use (default: 18000)')
     parser.add_argument('--output', help='Output path (default: auto-generated)')
     parser.add_argument('--patch_size', type=int, default=512, help='Patch size for processing (default: 512)')
     parser.add_argument('--use_gpu', action='store_true', help='Use GPU for inference')
@@ -168,31 +180,17 @@ def main():
 
         print("Enhancing image...")
         enhanced_image = process_image_in_patches(sess, enhanced, x_, image, patch_size)
-        if args.output:
-            output_path = args.output
-        else:
-            input_name = os.path.splitext(os.path.basename(args.image))[0]
-            output_dir = "enhanced_results"
-            os.makedirs(output_dir, exist_ok=True)
-            if phone.endswith("_orig"):
-                output_path = f"{output_dir}/{input_name}_{phone}_enhanced.png"
-            else:
-                output_path = f"{output_dir}/{input_name}_{phone}_iter_{iteration}_enhanced.png"
         enhanced_image_uint8 = np.clip(enhanced_image * 255, 0, 255).astype(np.uint8)
+
+        # Save to enhanced_picture/ with incremental number
+        save_folder = "enhanced_picture"
+        output_path = get_next_incremental_filename(save_folder, ext=".png")
         try:
-            output_dirname = os.path.dirname(output_path)
-            if output_dirname:
-                os.makedirs(output_dirname, exist_ok=True)
             imageio.imwrite(output_path, enhanced_image_uint8)
             print(f"Enhanced image saved to: {output_path}")
         except Exception as e:
             print(f"Error saving image: {e}")
             return
-        comparison_path = output_path.replace("_enhanced.png", "_comparison.png")
-        original_resized = np.array(Image.fromarray(image_raw).resize([enhanced_image.shape[1], enhanced_image.shape[0]]))
-        before_after = np.hstack((original_resized, enhanced_image_uint8))
-        imageio.imwrite(comparison_path, before_after)
-        print(f"Comparison image saved to: {comparison_path}")
 
 if __name__ == "__main__":
     main()

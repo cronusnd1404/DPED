@@ -12,4 +12,4 @@ DPED là một mô hình học sâu dùng để nâng cao chất lượng ảnh 
 - `utils.py`: Chứa các hàm hỗ trợ như tiền xử lý ảnh, lưu kết quả, v.v.
 - `download_dataset.sh`: Script tải tập dữ liệu DPED về máy.
 
->script: python run_on_image.py --input "đường_dẫn_ảnh_hoặc_thư_mục" .
+>script: python run_single_image.py --image path/to/input.jpg --model iphone --iteration latest
